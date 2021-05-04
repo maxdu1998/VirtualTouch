@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "960539551438",
+    "project_id": "chatfirabase-4d860",
+    "storage_bucket": "chatfirabase-4d860.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:960539551438:android:98d04c807f982bd2f0929f",
+        "android_client_info": {
+          "package_name": "com.example.myapplication"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "960539551438-umds3m46nkucqgg35qjiufodpjraa1iv.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDshthp0OwuhojuMkincAjSMjx8V1598VY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "960539551438-umds3m46nkucqgg35qjiufodpjraa1iv.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
