@@ -8,13 +8,17 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.os.Parcelable;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
 import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.DocumentChange;
+import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.EventListener;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.FirebaseFirestoreException;
@@ -22,6 +26,7 @@ import com.google.firebase.firestore.QuerySnapshot;
 import com.squareup.picasso.Picasso;
 import com.xwray.groupie.GroupAdapter;
 import com.xwray.groupie.Item;
+import com.xwray.groupie.OnItemClickListener;
 import com.xwray.groupie.ViewHolder;
 
 import java.util.List;
@@ -52,20 +57,41 @@ public class MessagesActivity extends AppCompatActivity {
 
         //updateToken();
 
+        adapter.setOnItemClickListener(new OnItemClickListener() {
+            @Override
+            public void onItemClick(@NonNull Item item, @NonNull View view) {
+                Intent intent = new Intent(MessagesActivity.this, ChatActivity.class);
+
+                ContactItem contactItem = (ContactItem) item;
+
+                User user = new User(
+                        contactItem.contact.getUuid(),
+                        contactItem.contact.getUsername(),
+                        contactItem.contact.getPhotoUrl());
+
+                intent.putExtra("user", user);
+                startActivity(intent);
+            }
+        });
+
+
         fetchLastMessage();
     }
-/*
-    private void updateToken() {
-        String token = FirebaseInstanceId.getInstance().getToken();
-        String uid = FirebaseAuth.getInstance().getUid();
 
-        if (uid != null) {
-            FirebaseFirestore.getInstance().collection("users")
-                    .document(uid)
-                    .update("token", token);
+    /*
+        private void updateToken() {
+            String token = FirebaseInstanceId.getInstance().getToken();
+            String uid = FirebaseAuth.getInstance().getUid();
+
+            if (uid != null) {
+                FirebaseFirestore.getInstance().collection("users")
+                        .document(uid)
+                        .update("token", token);
+            }
         }
-    }
-*/
+    */
+
+
     private void fetchLastMessage() {
         String uid = FirebaseAuth.getInstance().getUid();
         if (uid == null) return;
@@ -80,7 +106,7 @@ public class MessagesActivity extends AppCompatActivity {
                         List<DocumentChange> documentChanges = queryDocumentSnapshots.getDocumentChanges();
 
                         if (documentChanges != null) {
-                            for (DocumentChange doc: documentChanges) {
+                            for (DocumentChange doc : documentChanges) {
                                 if (doc.getType() == DocumentChange.Type.ADDED) {
                                     Contact contact = doc.getDocument().toObject(Contact.class);
 
@@ -142,6 +168,7 @@ public class MessagesActivity extends AppCompatActivity {
             Picasso.get()
                     .load(contact.getPhotoUrl())
                     .into(imgPhoto);
+
         }
 
         @Override
@@ -149,5 +176,4 @@ public class MessagesActivity extends AppCompatActivity {
             return R.layout.item_user_message;
         }
     }
-
 }
