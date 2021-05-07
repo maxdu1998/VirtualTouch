@@ -56,8 +56,8 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="32dp"
         android:text="@string/signIn"
+        android:textColor="@color/colorPrimary"
         android:textStyle="bold"
-        android:textColor="@android:color/holo_green_dark"
         app:layout_constraintEnd_toEndOf="@+id/btn_enter"
         app:layout_constraintStart_toStartOf="@+id/btn_enter"
         app:layout_constraintTop_toBottomOf="@+id/btn_enter" />
