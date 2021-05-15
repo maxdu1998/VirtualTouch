@@ -59,6 +59,7 @@ public class ChatActivity extends AppCompatActivity {
             }
         });
 
+
         adapter = new GroupAdapter();
         rv.setLayoutManager(new LinearLayoutManager(this));
         rv.setAdapter(adapter);

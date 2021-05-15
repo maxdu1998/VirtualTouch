@@ -71,6 +71,8 @@ public class MessagesActivity extends AppCompatActivity {
 
                 intent.putExtra("user", user);
                 startActivity(intent);
+                Log.i("Teste", user.getUsername());
+
             }
         });
 
@@ -109,7 +111,7 @@ public class MessagesActivity extends AppCompatActivity {
                             for (DocumentChange doc : documentChanges) {
                                 if (doc.getType() == DocumentChange.Type.ADDED) {
                                     Contact contact = doc.getDocument().toObject(Contact.class);
-
+                                    contact.setUuid(doc.getDocument().getId());
                                     adapter.add(new ContactItem(contact));
                                 }
                             }

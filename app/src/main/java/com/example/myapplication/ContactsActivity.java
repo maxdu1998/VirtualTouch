@@ -52,6 +52,7 @@ public class ContactsActivity extends AppCompatActivity {
                 intent.putExtra("user", userItem.user);
 
                 startActivity(intent);
+
             }
         });
 
