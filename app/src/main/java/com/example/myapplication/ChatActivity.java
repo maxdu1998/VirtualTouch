@@ -86,7 +86,7 @@ public class ChatActivity extends AppCompatActivity {
                     .document(fromId)
                     .collection(toId)
                     .orderBy("timestamp", Query.Direction.ASCENDING)
-                    .addSnapshotListener(new EventListener<QuerySnapshot>() {
+                    .addSnapshotListener(this ,new EventListener<QuerySnapshot>() {
                         @Override
                         public void onEvent(@Nullable QuerySnapshot queryDocumentSnapshots, @Nullable FirebaseFirestoreException e) {
                             List<DocumentChange> documentChanges = queryDocumentSnapshots.getDocumentChanges();
