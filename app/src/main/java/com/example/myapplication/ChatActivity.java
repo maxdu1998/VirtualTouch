@@ -6,7 +6,9 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import android.bluetooth.BluetoothAdapter;
 import android.os.Bundle;
+import android.os.Handler;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
@@ -30,6 +32,8 @@ import com.xwray.groupie.GroupAdapter;
 import com.xwray.groupie.Item;
 import com.xwray.groupie.ViewHolder;
 
+import org.apache.commons.text.StringEscapeUtils;
+
 import java.util.List;
 
 public class ChatActivity extends AppCompatActivity {
@@ -37,6 +41,9 @@ public class ChatActivity extends AppCompatActivity {
     private GroupAdapter adapter;
     private User user;
     private User me;
+    String Rock = "\\uD83D\\uDC4D";
+    String Joinha = "\\uD83E\\uDD18";
+    ConnectionThread connect;
 
     private EditText editChat;
 
@@ -63,7 +70,7 @@ public class ChatActivity extends AppCompatActivity {
         adapter = new GroupAdapter();
         rv.setLayoutManager(new LinearLayoutManager(this));
         rv.setAdapter(adapter);
-
+        connectBT();
         FirebaseFirestore.getInstance().collection("/users")
                 .document(FirebaseAuth.getInstance().getUid())
                 .get()
@@ -74,6 +81,13 @@ public class ChatActivity extends AppCompatActivity {
                         fetchMessages();
                     }
                 });
+
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        connect.cancel();
     }
 
     private void fetchMessages() {
@@ -95,9 +109,10 @@ public class ChatActivity extends AppCompatActivity {
                                 for (DocumentChange doc: documentChanges) {
                                     if (doc.getType() == DocumentChange.Type.ADDED) {
                                         Message message = doc.getDocument().toObject(Message.class);
-
-                                        if(!message.getFromId().equals(FirebaseAuth.getInstance().getUid()) && message.getText().contains("dado")){
-                                            Log.d("Msg", message.getText());
+                                        String t5 = StringEscapeUtils.escapeJava(message.getText());
+                                        if(!message.getFromId().equals(FirebaseAuth.getInstance().getUid()) && (t5.equals(Joinha)||t5.equals(Rock))){
+                                            Log.d("Arduino", message.getText());
+                                            connect.write((t5+"\n").getBytes());
                                         }
                                         else
                                             adapter.add(new MessageItem(message));
@@ -237,4 +252,58 @@ public class ChatActivity extends AppCompatActivity {
         }
     }
 
+    private void connectBT(){
+
+
+        BluetoothAdapter btAdapter = BluetoothAdapter.getDefaultAdapter();
+        if (btAdapter == null) {
+            //statusMessage.setText("Que pena! Hardware Bluetooth não está funcionando :(");
+        } else {
+            //statusMessage.setText("Ótimo! Hardware Bluetooth está funcionando :)");
+        }
+
+        /* A chamada do seguinte método liga o Bluetooth no dispositivo Android
+            sem pedido de autorização do usuário. É altamente não recomendado no
+            Android Developers, mas, para simplificar este app, que é um demo,
+            faremos isso. Na prática, em um app que vai ser usado por outras
+            pessoas, não faça isso.
+         */
+        btAdapter.enable();
+
+        connect = new ConnectionThread("98:D3:31:F5:2A:C9");
+        connect.start();
+
+        /* Um descanso rápido, para evitar bugs esquisitos.
+         */
+        try {
+            Thread.sleep(1000);
+        } catch (Exception E) {
+            E.printStackTrace();
+        }
+    }
+/*--------------------------------------------teste---------------------------------------*/
+    public static Handler handler = new Handler() {
+        @Override
+        public void handleMessage(android.os.Message msg) {
+
+            Bundle bundle = msg.getData();
+            byte[] data = bundle.getByteArray("data");
+            String dataString= new String(data);
+
+
+            if(dataString.equals("---N"))
+                //statusMessage.setText("Ocorreu um erro durante a conexão D:");
+                Log.d("Btt","Ocorreu um erro durante a conexão D:");
+            else if(dataString.equals("---S"))
+                //statusMessage.setText("Conectado :D");
+                Log.d("Btt","Conectado :D");
+            else {
+
+
+                //counterMessage.setText(dataString);
+            }
+
+        }
+    };
+    /*--------------------------------------------teste---------------------------------------*/
 }
