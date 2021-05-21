@@ -6,6 +6,8 @@ import android.bluetooth.BluetoothServerSocket;
 import android.bluetooth.BluetoothSocket;
 import android.os.Bundle;
 import android.os.Message;
+import android.util.Log;
+import android.widget.Toast;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -124,6 +126,7 @@ public class ConnectionThread extends Thread {
                  */
                 e.printStackTrace();
                 toMainActivity("---N".getBytes());
+
             }
 
         }
@@ -244,17 +247,22 @@ public class ConnectionThread extends Thread {
 
             running = false;
             this.isConnected = false;
-            btServerSocket.close();
-            btSocket.close();
+            if(btServerSocket != null)
+                btServerSocket.close();
+            if(btSocket != null)
+                btSocket.close();
 
         } catch (IOException e) {
+
+            running = false;
+            this.isConnected = false;
+            Log.d("Error", e.toString());
             e.printStackTrace();
         }
-        running = false;
-        this.isConnected = false;
     }
 
     public boolean isConnected() {
         return this.isConnected;
     }
+
 }

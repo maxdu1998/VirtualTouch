@@ -2,11 +2,16 @@ package com.example.myapplication;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import android.app.Activity;
+import android.app.Dialog;
 import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.BluetoothDevice;
+import android.content.DialogInterface;
 import android.os.Bundle;
 import android.os.Handler;
 import android.util.Log;
@@ -15,6 +20,7 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
@@ -34,16 +40,31 @@ import com.xwray.groupie.ViewHolder;
 
 import org.apache.commons.text.StringEscapeUtils;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 public class ChatActivity extends AppCompatActivity {
 
     private GroupAdapter adapter;
     private User user;
     private User me;
-    String Rock = "\\uD83D\\uDC4D";
-    String Joinha = "\\uD83E\\uDD18";
+   // String Rock = "\\uD83D\\uDC4D";
+   // String Joinha = "\\uD83E\\uDD18";
+
+    String Like 		= "\\uD83D\\uDC4D";
+    String ToPoint 	    = "\\u261D\\uFE0F";
+    String Fuck 		= "\\uD83D\\uDD95";
+    String Rock 		= "\\uD83E\\uDD18";
+    String Ok 			= "\\uD83D\\uDC4C";
+    String HangLoose 	= "\\uD83E\\uDD19";
+    String Peace 		= "\\u270C\\uFE0F";
+    String Close 		= "\\u270A";
+    String Open 		= "\\u270B";
+
     ConnectionThread connect;
+    //public boolean isConnected = false;
+    static Activity activity;
 
     private EditText editChat;
 
@@ -54,11 +75,11 @@ public class ChatActivity extends AppCompatActivity {
 
         user = getIntent().getExtras().getParcelable("user");
         getSupportActionBar().setTitle(user.getUsername());
-
+        activity = ChatActivity.this;
         RecyclerView rv = findViewById(R.id.recycler_chat);
         editChat = findViewById(R.id.edit_chat);
         Button btnChat = findViewById(R.id.btn_chat);
-
+        isConnected = false;
         btnChat.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -66,11 +87,19 @@ public class ChatActivity extends AppCompatActivity {
             }
         });
 
+        btnChat.setOnLongClickListener(new View.OnLongClickListener() {
+            @Override
+            public boolean onLongClick(View view) {
+                fetchBluetooth();
+                return false;
+            }
+        });
+
 
         adapter = new GroupAdapter();
         rv.setLayoutManager(new LinearLayoutManager(this));
         rv.setAdapter(adapter);
-        connectBT();
+
         FirebaseFirestore.getInstance().collection("/users")
                 .document(FirebaseAuth.getInstance().getUid())
                 .get()
@@ -87,7 +116,9 @@ public class ChatActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        connect.cancel();
+        if(connect != null)
+            connect.cancel();
+        Log.d("Error", "Destruido");
     }
 
     private void fetchMessages() {
@@ -110,11 +141,11 @@ public class ChatActivity extends AppCompatActivity {
                                     if (doc.getType() == DocumentChange.Type.ADDED) {
                                         Message message = doc.getDocument().toObject(Message.class);
                                         String t5 = StringEscapeUtils.escapeJava(message.getText());
-                                        if(!message.getFromId().equals(FirebaseAuth.getInstance().getUid()) && (t5.equals(Joinha)||t5.equals(Rock))){
-                                            Log.d("Arduino", message.getText());
-                                            connect.write((t5+"\n").getBytes());
+                                        if(!message.getFromId().equals(FirebaseAuth.getInstance().getUid()) && (t5.contains(Like)||t5.contains(Rock))){
+                                            if(isConnected && connect.isConnected)
+                                                connect.write((t5+"\n").getBytes());
                                         }
-                                        else
+                                        //else
                                             adapter.add(new MessageItem(message));
                                     }
                                 }
@@ -252,7 +283,7 @@ public class ChatActivity extends AppCompatActivity {
         }
     }
 
-    private void connectBT(){
+    private void connectBT(String mac){
 
 
         BluetoothAdapter btAdapter = BluetoothAdapter.getDefaultAdapter();
@@ -270,7 +301,8 @@ public class ChatActivity extends AppCompatActivity {
          */
         btAdapter.enable();
 
-        connect = new ConnectionThread("98:D3:31:F5:2A:C9");
+        //connect = new ConnectionThread("98:D3:31:F5:2A:C9");
+        connect = new ConnectionThread(mac);
         connect.start();
 
         /* Um descanso rápido, para evitar bugs esquisitos.
@@ -280,8 +312,49 @@ public class ChatActivity extends AppCompatActivity {
         } catch (Exception E) {
             E.printStackTrace();
         }
+        isConnected = connect.isConnected;
     }
-/*--------------------------------------------teste---------------------------------------*/
+
+    private static boolean isConnected;
+
+    private void fetchBluetooth(){
+
+        BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+        Set<BluetoothDevice> pairedDevices = bluetoothAdapter.getBondedDevices();
+
+        if (pairedDevices.size() > 0) {
+            String[] agenda = new String[pairedDevices.size()];
+            int pos = 0;
+            for (BluetoothDevice device : pairedDevices) {
+                agenda[pos] = device.getName();
+                pos++;
+            }
+            Dialog dia = onCreateDialog(agenda, pairedDevices);
+            dia.show();
+        }
+    }
+
+    private Dialog onCreateDialog(final String [] agenda, final Set<BluetoothDevice> bluetoothDevices) {
+        //final String [] items=agenda.toArray(String);
+        final AlertDialog.Builder builder = new AlertDialog.Builder(ChatActivity.this);
+        builder.setTitle("Escolha")
+                .setItems(agenda, new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int which) {
+                        // The 'which' argument contains the index position
+                        // of the selected item
+                        String mac = "";
+                        for (BluetoothDevice device : bluetoothDevices){
+                            if(device.getName().equals(agenda[which])){
+                                mac = device.getAddress();
+                                connectBT(mac);
+                                break;
+                            }
+                        }
+                    }
+                });
+        return builder.create();
+    }
+    /*--------------------------------------------teste---------------------------------------*/
     public static Handler handler = new Handler() {
         @Override
         public void handleMessage(android.os.Message msg) {
@@ -290,17 +363,20 @@ public class ChatActivity extends AppCompatActivity {
             byte[] data = bundle.getByteArray("data");
             String dataString= new String(data);
 
-
-            if(dataString.equals("---N"))
+            if(dataString.equals("---N")){
+                isConnected = false;
+                Toast.makeText(activity, "Connection ERROR" , Toast.LENGTH_LONG).show();
+            }
                 //statusMessage.setText("Ocorreu um erro durante a conexão D:");
-                Log.d("Btt","Ocorreu um erro durante a conexão D:");
-            else if(dataString.equals("---S"))
-                //statusMessage.setText("Conectado :D");
+
+
+            else if(dataString.equals("---S")){
+                isConnected = true;
+                Toast.makeText(activity, "Connection SUCCESS" , Toast.LENGTH_LONG).show();
                 Log.d("Btt","Conectado :D");
+            }
             else {
-
-
-                //counterMessage.setText(dataString);
+                //ReceberMSG
             }
 
         }
