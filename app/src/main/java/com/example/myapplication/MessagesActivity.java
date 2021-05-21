@@ -71,7 +71,11 @@ public class MessagesActivity extends AppCompatActivity {
 
                 intent.putExtra("user", user);
                 startActivity(intent);
-                Log.i("Teste", user.getUsername());
+                Log.i("Teste", contactItem.contact.getLastMessage());
+                String s123 = "\uD83D\uDC4A";
+                if( s123 == contactItem.contact.getLastMessage().toString())
+                    Log.i("Teste", "soco");
+                else Log.i("Teste", "sem soco");
 
             }
         });
