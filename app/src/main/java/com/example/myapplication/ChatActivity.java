@@ -52,15 +52,15 @@ public class ChatActivity extends AppCompatActivity {
     // String Rock = "\\uD83D\\uDC4D";
     // String Joinha = "\\uD83E\\uDD18";
 
-    String Like = "\\uD83D\\uDC4D";
-    String ToPoint = "\\u261D\\uFE0F";
-    String Fuck = "\\uD83D\\uDD95";
-    String Rock = "\\uD83E\\uDD18";
-    String Ok = "\\uD83D\\uDC4C";
-    String HangLoose = "\\uD83E\\uDD19";
-    String Peace = "\\u270C\\uFE0F";
-    String Close = "\\u270A";
-    String Open = "\\u270B";
+    String Like         = "\\uD83D\\uDC4D";
+    String ToPoint      = "\\u261D\\uFE0F";
+    String Fuck         = "\\uD83D\\uDD95";
+    String Rock         = "\\uD83E\\uDD18";
+    String Ok           = "\\uD83D\\uDC4C";
+    String HangLoose    = "\\uD83E\\uDD19";
+    String Peace        = "\\u270C\\uFE0F";
+    String Close        = "\\u270A";
+    String Open         = "\\u270B";
 
     ConnectionThread connect;
     //public boolean isConnected = false;
@@ -141,9 +141,58 @@ public class ChatActivity extends AppCompatActivity {
                                     if (doc.getType() == DocumentChange.Type.ADDED) {
                                         Message message = doc.getDocument().toObject(Message.class);
                                         String t5 = StringEscapeUtils.escapeJava(message.getText());
-                                        if (!message.getFromId().equals(FirebaseAuth.getInstance().getUid()) && (t5.contains(Like) || t5.contains(Rock))) {
-                                            if (isConnected && connect.isConnected)
-                                                connect.write((t5 + "\n").getBytes());
+                                        if (!message.getFromId().equals(FirebaseAuth.getInstance().getUid()) && (
+                                                t5.contains(Like)
+                                                        || t5.contains(ToPoint  )
+                                                        || t5.contains(Fuck     )
+                                                        || t5.contains(Rock     )
+                                                        || t5.contains(Ok       )
+                                                        || t5.contains(HangLoose)
+                                                        || t5.contains(Peace    )
+                                                        || t5.contains(Close    )
+                                                        || t5.contains(Open     )
+                                        )) {
+                                            if (isConnected && connect.isConnected){
+
+                                                if(t5.contains(Like))
+                                                    connect.write(("0").getBytes());
+                                                if(t5.contains(ToPoint))
+                                                    connect.write(("1").getBytes());
+                                                if(t5.contains(Fuck))
+                                                    connect.write(("2").getBytes());
+                                                if(t5.contains(Rock))
+                                                    connect.write(("3").getBytes());
+                                                if(t5.contains(Ok))
+                                                    connect.write(("4").getBytes());
+                                                if(t5.contains(HangLoose))
+                                                    connect.write(("5").getBytes());
+                                                if(t5.contains(Peace))
+                                                    connect.write(("6").getBytes());
+                                                if(t5.contains(Close))
+                                                    connect.write(("7").getBytes());
+                                                if(t5.contains(Open))
+                                                    connect.write(("8").getBytes());
+
+                                                /*
+                                                t5 = t5.replaceAll(Like     , "0:");
+                                                t5 = t5.replaceAll(ToPoint  , "1:");
+                                                t5 = t5.replaceAll(Fuck     , "2:");
+                                                t5 = t5.replaceAll(Rock     , "3:");
+                                                t5 = t5.replaceAll(Ok       , "4:");
+                                                t5 = t5.replaceAll(HangLoose, "5:");
+                                                t5 = t5.replaceAll(Peace    , "6:");
+                                                t5 = t5.replaceAll(Close    , "7:");
+                                                t5 = t5.replaceAll(Open     , "8:");
+
+                                                String[] t6 = t5.split(":");
+                                                for( String t7 : t6) {
+                                                    connect.write((t7 + "\n").getBytes());
+                                                }
+
+                                                 */
+
+                                            }
+
                                         }
                                         //else
                                         adapter.add(new MessageItem(message));
