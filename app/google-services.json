@@ -1,33 +1,34 @@
 {
   "project_info": {
-    "project_number": "960539551438",
-    "project_id": "chatfirabase-4d860",
-    "storage_bucket": "chatfirabase-4d860.appspot.com"
+    "project_number": "716862377819",
+    "firebase_url": "https://virtualtouch-3c24c-default-rtdb.firebaseio.com",
+    "project_id": "virtualtouch-3c24c",
+    "storage_bucket": "virtualtouch-3c24c.appspot.com"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:960539551438:android:98d04c807f982bd2f0929f",
+        "mobilesdk_app_id": "1:716862377819:android:e71a9ae3ae2f2b9372947e",
         "android_client_info": {
           "package_name": "com.example.myapplication"
         }
       },
       "oauth_client": [
         {
-          "client_id": "960539551438-umds3m46nkucqgg35qjiufodpjraa1iv.apps.googleusercontent.com",
+          "client_id": "716862377819-ivhtbb454maonipefm4hnd8ch0j5cg17.apps.googleusercontent.com",
           "client_type": 3
         }
       ],
       "api_key": [
         {
-          "current_key": "AIzaSyDshthp0OwuhojuMkincAjSMjx8V1598VY"
+          "current_key": "AIzaSyBBR6gduBeuQQ8ebU687jD3TytL_6aAZc8"
         }
       ],
       "services": {
         "appinvite_service": {
           "other_platform_oauth_client": [
             {
-              "client_id": "960539551438-umds3m46nkucqgg35qjiufodpjraa1iv.apps.googleusercontent.com",
+              "client_id": "716862377819-ivhtbb454maonipefm4hnd8ch0j5cg17.apps.googleusercontent.com",
               "client_type": 3
             }
           ]
