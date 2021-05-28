@@ -47,8 +47,8 @@ import java.util.Set;
 public class ChatActivity extends AppCompatActivity {
 
     private GroupAdapter adapter;
-    private User user;
-    private User me;
+    private static User user;
+    private  User me;
     // String Rock = "\\uD83D\\uDC4D";
     // String Joinha = "\\uD83E\\uDD18";
 
@@ -124,12 +124,11 @@ public class ChatActivity extends AppCompatActivity {
     private void fetchMessages() {
         if (me != null) {
 
-            String fromId = me.getUuid();
-            String toId = user.getUuid();
-
+            final String MeuId = me.getUuid();
+            final String contatoId = user.getUuid();
             FirebaseFirestore.getInstance().collection("/conversations")
-                    .document(fromId)
-                    .collection(toId)
+                    .document(MeuId)
+                    .collection(contatoId)
                     .orderBy("timestamp", Query.Direction.ASCENDING)
                     .addSnapshotListener(this, new EventListener<QuerySnapshot>() {
                         @Override
@@ -204,6 +203,31 @@ public class ChatActivity extends AppCompatActivity {
                         }
                     });
 
+            FirebaseFirestore.getInstance().collection("/handComand")
+                    .document(MeuId)
+                    .collection(contatoId)
+                    .orderBy("timestamp", Query.Direction.ASCENDING)
+                    .addSnapshotListener(this, new EventListener<QuerySnapshot>() {
+                        @Override
+                        public void onEvent(@Nullable QuerySnapshot queryDocumentSnapshots, @Nullable FirebaseFirestoreException e) {
+                            List<DocumentChange> documentChanges = queryDocumentSnapshots.getDocumentChanges();
+
+                            if (documentChanges != null) {
+                                for (DocumentChange doc : documentChanges) {
+                                    if (doc.getType() == DocumentChange.Type.ADDED) {
+                                        Message message = doc.getDocument().toObject(Message.class);
+                                        Log.d("BT_R", message.getText());
+                                        FirebaseFirestore.getInstance().collection("/handComand")
+                                                .document(MeuId)
+                                                .collection(contatoId)
+                                                .document(doc.getDocument().getId())
+                                                .delete();
+                                    }
+                                }
+                            }
+                        }
+                    });
+
         }
     }
 
@@ -212,20 +236,21 @@ public class ChatActivity extends AppCompatActivity {
 
         editChat.setText(null);
 
-        final String fromId = FirebaseAuth.getInstance().getUid();
-        final String toId = user.getUuid();
+        final String MeuId = FirebaseAuth.getInstance().getUid();
+        final String contatoId = user.getUuid();
         long timestamp = System.currentTimeMillis();
 
         final Message message = new Message();
-        message.setFromId(fromId);
-        message.setToId(toId);
+        message.setFromId(MeuId);
+        message.setToId(contatoId);
         message.setTimestamp(timestamp);
         message.setText(text);
 
         if (!message.getText().isEmpty()) {
+            //Base que garda as minhas msg enviadas
             FirebaseFirestore.getInstance().collection("/conversations")
-                    .document(fromId)
-                    .collection(toId)
+                    .document(MeuId)
+                    .collection(contatoId)
                     .add(message)
                     .addOnSuccessListener(new OnSuccessListener<DocumentReference>() {
                         @Override
@@ -233,16 +258,16 @@ public class ChatActivity extends AppCompatActivity {
                             Log.d("Teste", documentReference.getId());
 
                             Contact contact = new Contact();
-                            contact.setUuid(toId);
+                            contact.setUuid(contatoId);
                             contact.setUsername(user.getUsername());
                             contact.setPhotoUrl(user.getProfileUrl());
                             contact.setTimestamp(message.getTimestamp());
                             contact.setLastMessage(message.getText());
 
                             FirebaseFirestore.getInstance().collection("/last-messages")
-                                    .document(fromId)
+                                    .document(MeuId)
                                     .collection("contacts")
-                                    .document(toId)
+                                    .document(contatoId)
                                     .set(contact);
 /*
                             if (!user.isOnline()) {
@@ -269,9 +294,10 @@ public class ChatActivity extends AppCompatActivity {
                         }
                     });
 
+            //Envia para o contato a mensagem
             FirebaseFirestore.getInstance().collection("/conversations")
-                    .document(toId)
-                    .collection(fromId)
+                    .document(contatoId)
+                    .collection(MeuId)
                     .add(message)
                     .addOnSuccessListener(new OnSuccessListener<DocumentReference>() {
                         @Override
@@ -279,16 +305,16 @@ public class ChatActivity extends AppCompatActivity {
                             Log.d("Teste", documentReference.getId());
 
                             Contact contact = new Contact();
-                            contact.setUuid(toId);
+                            contact.setUuid(contatoId);
                             contact.setUsername(me.getUsername());
                             contact.setPhotoUrl(me.getProfileUrl());
                             contact.setTimestamp(message.getTimestamp());
                             contact.setLastMessage(message.getText());
 
                             FirebaseFirestore.getInstance().collection("/last-messages")
-                                    .document(toId)
+                                    .document(contatoId)
                                     .collection("contacts")
-                                    .document(fromId)
+                                    .document(MeuId)
                                     .set(contact);
 
 
@@ -333,6 +359,58 @@ public class ChatActivity extends AppCompatActivity {
                     : R.layout.item_to_message;
         }
     }
+
+    private static void sendMessageBT(String text) {
+        //String text = editChat.getText().toString();
+
+        //editChat.setText(null);
+        Log.d("BTE", text);
+        final String MeuId = FirebaseAuth.getInstance().getUid();
+        final String contatoId = user.getUuid();
+        long timestamp = System.currentTimeMillis();
+
+        final Message message = new Message();
+        message.setFromId(MeuId);
+        message.setToId(contatoId);
+        message.setTimestamp(timestamp);
+        message.setText(text);
+
+        if (!message.getText().isEmpty()) {
+
+            FirebaseFirestore.getInstance().collection("/handComand")
+                    .document(contatoId)
+                    .collection(MeuId)
+                    .add(message)
+                    .addOnSuccessListener(new OnSuccessListener<DocumentReference>() {
+                        @Override
+                        public void onSuccess(DocumentReference documentReference) {
+                            Log.d("Teste", documentReference.getId());
+/*
+                            Contact contact = new Contact();
+                            contact.setUuid(contatoId);
+                            contact.setUsername(me.getUsername());
+                            contact.setPhotoUrl(me.getProfileUrl());
+                            contact.setTimestamp(message.getTimestamp());
+                            contact.setLastMessage(message.getText());
+
+                            FirebaseFirestore.getInstance().collection("/last-messages")
+                                    .document(contatoId)
+                                    .collection("contacts")
+                                    .document(MeuId)
+                                    .set(contact);*/
+
+
+                        }
+                    })
+                    .addOnFailureListener(new OnFailureListener() {
+                        @Override
+                        public void onFailure(@NonNull Exception e) {
+                            Log.e("Teste", e.getMessage(), e);
+                        }
+                    });
+        }
+    }
+
 
     private void connectBT(String mac) {
 
@@ -406,6 +484,8 @@ public class ChatActivity extends AppCompatActivity {
         return builder.create();
     }
 
+
+
     /*--------------------------------------------teste---------------------------------------*/
     public static Handler handler = new Handler() {
         @Override
@@ -427,7 +507,7 @@ public class ChatActivity extends AppCompatActivity {
                 Toast.makeText(activity, "Connection SUCCESS", Toast.LENGTH_LONG).show();
                 Log.d("Btt", "Conectado :D");
             } else {
-                //ReceberMSG
+                sendMessageBT(dataString);
             }
 
         }
