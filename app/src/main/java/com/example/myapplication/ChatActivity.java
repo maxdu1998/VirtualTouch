@@ -23,7 +23,11 @@ import android.media.MediaRecorder;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.util.Log;
+import android.view.KeyEvent;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.Button;
@@ -105,28 +109,47 @@ public class ChatActivity extends AppCompatActivity {
         activity = ChatActivity.this;
         RecyclerView rv = findViewById(R.id.recycler_chat);
         editChat = findViewById(R.id.edit_chat);
-        Button btnChat = findViewById(R.id.btn_chat);
+        final Button btnChat = findViewById(R.id.btn_chat);
         final Button btnGravar = findViewById(R.id.btn_Audio);
         isConnected = false;
 
         baseFileName = getExternalCacheDir().getAbsolutePath();
         ActivityCompat.requestPermissions(this, permissions, REQUEST_RECORD_AUDIO_PERMISSION);
-        btnGravar.setOnClickListener(new View.OnClickListener() {
+       /* btnGravar.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 onRecord(mStartRecording);
                 if (mStartRecording) {
-                    btnGravar.setText("Grando");
+                    btnGravar.setBackground(getDrawable(R.drawable.ic_twotone_mic_record));
                 } else {
-                    btnGravar.setText("Gravar");
+                    btnGravar.setBackground(getDrawable(R.drawable.ic_twotone_mic));
                 }
                 mStartRecording = !mStartRecording;
+
+            }
+        });*/
+
+        btnGravar.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View view, MotionEvent motionEvent) {
+                if(motionEvent.getAction() == MotionEvent.ACTION_DOWN){
+                    btnGravar.setBackground(getDrawable(R.drawable.ic_twotone_mic_record));
+                    mStartRecording = true;
+                    onRecord(mStartRecording);
+                }
+
+                else  if(motionEvent.getAction() == MotionEvent.ACTION_UP){
+                    btnGravar.setBackground(getDrawable(R.drawable.ic_twotone_mic));
+                    mStartRecording = false;
+                    onRecord(mStartRecording);
+                }
+                return false;
             }
         });
-
         btnChat.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+
                 sendMessage();
                 //sendUrlToMediaPlayer("https://firebasestorage.googleapis.com/v0/b/virtualtouch-3c24c.appspot.com/o/audio%2F5e39b823-bd9d-49e1-af61-e4e3cbcd2ff7?alt=media&token=d9d3bcb9-1fda-40d3-a475-bbb1094c283e");
                 //sendUrlToMediaPlayer(fileName);
@@ -141,6 +164,31 @@ public class ChatActivity extends AppCompatActivity {
             }
         });
 
+
+        editChat.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+
+            }
+
+            @Override
+            public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+
+            }
+
+            @Override
+            public void afterTextChanged(Editable editable) {
+                String txt = editChat.getText().toString().replaceAll(" ", "");
+                if(txt.length()>0) {
+                    btnChat.setVisibility(View.VISIBLE);
+                    btnGravar.setVisibility(View.INVISIBLE);
+                }
+                else{
+                    btnChat.setVisibility(View.INVISIBLE);
+                    btnGravar.setVisibility(View.VISIBLE);
+                }
+            }
+        });
 
         adapter = new GroupAdapter();
         rv.setLayoutManager(new LinearLayoutManager(this));
