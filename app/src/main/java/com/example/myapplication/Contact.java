@@ -4,6 +4,7 @@ public class Contact {
     private String uuid;
     private String username;
     private String lastMessage;
+    private boolean isAudio = false;
     private long timestamp;
     private String photoUrl;
 
@@ -45,5 +46,13 @@ public class Contact {
 
     public void setPhotoUrl(String photoUrl) {
         this.photoUrl = photoUrl;
+    }
+
+    public boolean getIsAudio() {
+        return isAudio;
+    }
+
+    public void setIsAudio(boolean isAudio) {
+        this.isAudio = isAudio;
     }
 }

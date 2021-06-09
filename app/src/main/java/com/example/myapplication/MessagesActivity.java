@@ -170,7 +170,12 @@ public class MessagesActivity extends AppCompatActivity {
             ImageView imgPhoto = viewHolder.itemView.findViewById(R.id.img_message_user);
 
             username.setText(contact.getUsername());
-            message.setText(contact.getLastMessage());
+            if(contact.getIsAudio()){
+                message.setText("");
+                message.setBackground(getDrawable(R.drawable.ic_round_headset_off));
+            }
+            else
+                message.setText(contact.getLastMessage());
             Picasso.get()
                     .load(contact.getPhotoUrl())
                     .into(imgPhoto);

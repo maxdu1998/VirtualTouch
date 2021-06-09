@@ -85,13 +85,16 @@ public class ChatActivity extends AppCompatActivity {
 
     private MediaPlayer mediaPlayer;
     boolean mStartRecording = true;
+    boolean mStartPlay = true;
     private MediaRecorder recorder = null;
+    private MediaPlayer   player = null;
     String baseFileName = null;
     String fileName = null;
     // Requesting permission to RECORD_AUDIO
     private boolean permissionToRecordAccepted = false;
     private String [] permissions = {Manifest.permission.RECORD_AUDIO};
     private static final int REQUEST_RECORD_AUDIO_PERMISSION = 200;
+    private MessageItem lastAudio = null;
 
     ConnectionThread connect;
     //public boolean isConnected = false;
@@ -198,8 +201,18 @@ public class ChatActivity extends AppCompatActivity {
             public void onItemClick(@NonNull Item item, @NonNull View view) {
                // Intent intent = new Intent(ChatActivity.this, ChatActivity.class);
                 MessageItem msg = (ChatActivity.MessageItem) item;
-                if(msg.message.getIsAudio())
-                    sendUrlToMediaPlayer(msg.message.getText());
+                if(msg.message.getIsAudio()){
+                    if(lastAudio != msg && lastAudio != null && !mStartPlay){
+                        onPlay(false, lastAudio.message.getText(), lastAudio.imgAudio);
+                        Log.d("Audio", "Dois audio parar 1");
+
+                    }
+                    lastAudio = msg;
+                    onPlay(mStartPlay, msg.message.getText(), msg.imgAudio);
+                    mStartPlay =! mStartPlay;
+                    Log.d("Audio", "Tocar");
+                }
+
             }
         });
 
@@ -223,6 +236,58 @@ public class ChatActivity extends AppCompatActivity {
         } else {
             stopRecording();
         }
+    }
+    private void onPlay(boolean start, String url, ImageView img) {
+        if (start) {
+            startPlaying(url, img);
+        } else {
+            stopPlaying(img);
+        }
+    }
+    /*private void startPlaying() {
+        player = new MediaPlayer();
+        try {
+            player.setDataSource(fileName);
+            player.prepare();
+            player.start();
+        } catch (IOException e) {
+            Log.e("Audio", "prepare() failed");
+        }
+    }
+*/
+    void startPlaying(String url, final ImageView img) {
+        try {
+            player = new MediaPlayer();
+            player.setAudioStreamType(AudioManager.STREAM_MUSIC);
+            player.setDataSource(url);
+
+            player.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
+                @Override
+                public void onPrepared(MediaPlayer mp) {
+                    player.start();
+                    img.setBackground(getDrawable(R.drawable.ic_round_headset_on));
+                }
+            });
+            player.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
+                @Override
+                public void onCompletion(MediaPlayer mp) {
+                    stopPlaying(img);
+                }
+            });
+
+            player.prepareAsync();
+        } catch (IOException err) {
+            Log.e("Audio", err.toString());
+        }
+    }
+
+    private void stopPlaying(ImageView img) {
+        img.setBackground(getDrawable(R.drawable.ic_round_headset_off));
+        player.stop();
+        player.reset();
+        player.release();
+        mStartPlay = true;
+        player = null;
     }
 
     @Override
@@ -297,6 +362,7 @@ public class ChatActivity extends AppCompatActivity {
                                             contact.setPhotoUrl(user.getProfileUrl());
                                             contact.setTimestamp(message.getTimestamp());
                                             contact.setLastMessage(message.getText());
+                                            contact.setIsAudio(message.getIsAudio());
 
                                             FirebaseFirestore.getInstance().collection("/last-messages")
                                                     .document(MeuId)
@@ -344,6 +410,7 @@ public class ChatActivity extends AppCompatActivity {
                                             contact.setPhotoUrl(me.getProfileUrl());
                                             contact.setTimestamp(message.getTimestamp());
                                             contact.setLastMessage(message.getText());
+                                            contact.setIsAudio(message.getIsAudio());
 
                                             FirebaseFirestore.getInstance().collection("/last-messages")
                                                     .document(contatoId)
@@ -382,34 +449,6 @@ public class ChatActivity extends AppCompatActivity {
         if (connect != null)
             connect.cancel();
         Log.d("Error", "Destruido");
-    }
-
-    void sendUrlToMediaPlayer(String url) {
-        try {
-            mediaPlayer = new MediaPlayer();
-            mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
-            // enviar a StreamUrl para o player
-            mediaPlayer.setDataSource(url);
-
-            // esperar que ele fique pronto e após ficar pronto tocar o áudio
-            mediaPlayer.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
-                @Override
-                public void onPrepared(MediaPlayer mp) {
-                    mediaPlayer.start();
-                }
-            });
-            mediaPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
-                @Override
-                public void onCompletion(MediaPlayer mp) {
-                    mediaPlayer.stop();
-                    mediaPlayer.reset();
-                }
-            });
-
-            mediaPlayer.prepareAsync();
-        } catch (IOException err) {
-            Log.e("Audio Error", err.toString());
-        }
     }
 
     private void fetchMessages() {
@@ -623,7 +662,7 @@ public class ChatActivity extends AppCompatActivity {
     private class MessageItem extends Item<ViewHolder> {
 
         private final Message message;
-
+        public ImageView imgAudio;
         private MessageItem(Message message) {
             this.message = message;
         }
@@ -632,8 +671,12 @@ public class ChatActivity extends AppCompatActivity {
         public void bind(@NonNull ViewHolder viewHolder, int position) {
             TextView txtMsg = viewHolder.itemView.findViewById(R.id.txt_msg);
             ImageView imgMessage = viewHolder.itemView.findViewById(R.id.img_message_user);
-            if(message.getIsAudio())
+            if(message.getIsAudio()){
+                imgAudio = viewHolder.itemView.findViewById(R.id.img_audio);
+                imgAudio.setBackground(getDrawable(R.drawable.ic_round_headset_off));
                 txtMsg.setText("Audio");
+            }
+
             else
                 txtMsg.setText(message.getText());
 
@@ -648,6 +691,11 @@ public class ChatActivity extends AppCompatActivity {
         @Override
         public int getLayout() {
 
+            if(message.getIsAudio()){
+                return message.getFromId().equals(FirebaseAuth.getInstance().getUid())
+                        ? R.layout.item_from_audio
+                        : R.layout.item_to_audio;
+            }
             return message.getFromId().equals(FirebaseAuth.getInstance().getUid())
                     ? R.layout.item_from_message
                     : R.layout.item_to_message;
