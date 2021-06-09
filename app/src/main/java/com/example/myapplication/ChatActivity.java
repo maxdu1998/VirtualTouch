@@ -12,10 +12,12 @@ import android.app.Dialog;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.content.DialogInterface;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.os.Handler;
 import android.util.Log;
 import android.view.View;
+import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
@@ -48,19 +50,19 @@ public class ChatActivity extends AppCompatActivity {
 
     private GroupAdapter adapter;
     private static User user;
-    private  User me;
+    private User me;
     // String Rock = "\\uD83D\\uDC4D";
     // String Joinha = "\\uD83E\\uDD18";
 
-    String Like         = "\\uD83D\\uDC4D";
-    String ToPoint      = "\\u261D\\uFE0F";
-    String Fuck         = "\\uD83D\\uDD95";
-    String Rock         = "\\uD83E\\uDD18";
-    String Ok           = "\\uD83D\\uDC4C";
-    String HangLoose    = "\\uD83E\\uDD19";
-    String Peace        = "\\u270C\\uFE0F";
-    String Close        = "\\u270A";
-    String Open         = "\\u270B";
+    String Like = "\\uD83D\\uDC4D";
+    String ToPoint = "\\u261D\\uFE0F";
+    String Fuck = "\\uD83D\\uDD95";
+    String Rock = "\\uD83E\\uDD18";
+    String Ok = "\\uD83D\\uDC4C";
+    String HangLoose = "\\uD83E\\uDD19";
+    String Peace = "\\u270C\\uFE0F";
+    String Close = "\\u270A";
+    String Open = "\\u270B";
 
     ConnectionThread connect;
     //public boolean isConnected = false;
@@ -142,34 +144,34 @@ public class ChatActivity extends AppCompatActivity {
                                         String t5 = StringEscapeUtils.escapeJava(message.getText());
                                         if (!message.getFromId().equals(FirebaseAuth.getInstance().getUid()) && (
                                                 t5.contains(Like)
-                                                        || t5.contains(ToPoint  )
-                                                        || t5.contains(Fuck     )
-                                                        || t5.contains(Rock     )
-                                                        || t5.contains(Ok       )
+                                                        || t5.contains(ToPoint)
+                                                        || t5.contains(Fuck)
+                                                        || t5.contains(Rock)
+                                                        || t5.contains(Ok)
                                                         || t5.contains(HangLoose)
-                                                        || t5.contains(Peace    )
-                                                        || t5.contains(Close    )
-                                                        || t5.contains(Open     )
+                                                        || t5.contains(Peace)
+                                                        || t5.contains(Close)
+                                                        || t5.contains(Open)
                                         )) {
-                                            if (isConnected && connect.isConnected){
+                                            if (isConnected && connect.isConnected) {
 
-                                                if(t5.contains(Like))
+                                                if (t5.contains(Like))
                                                     connect.write(("0").getBytes());
-                                                if(t5.contains(ToPoint))
+                                                if (t5.contains(ToPoint))
                                                     connect.write(("1").getBytes());
-                                                if(t5.contains(Fuck))
+                                                if (t5.contains(Fuck))
                                                     connect.write(("2").getBytes());
-                                                if(t5.contains(Rock))
+                                                if (t5.contains(Rock))
                                                     connect.write(("3").getBytes());
-                                                if(t5.contains(Ok))
+                                                if (t5.contains(Ok))
                                                     connect.write(("4").getBytes());
-                                                if(t5.contains(HangLoose))
+                                                if (t5.contains(HangLoose))
                                                     connect.write(("5").getBytes());
-                                                if(t5.contains(Peace))
+                                                if (t5.contains(Peace))
                                                     connect.write(("6").getBytes());
-                                                if(t5.contains(Close))
+                                                if (t5.contains(Close))
                                                     connect.write(("7").getBytes());
-                                                if(t5.contains(Open))
+                                                if (t5.contains(Open))
                                                     connect.write(("8").getBytes());
 
                                                 /*
@@ -442,6 +444,15 @@ public class ChatActivity extends AppCompatActivity {
             E.printStackTrace();
         }
         isConnected = connect.isConnected;
+        //Muda Cor ao Conectar BT
+        if (isConnected = true) {
+            findViewById(R.id.btn_chat).setBackgroundResource(R.drawable.bg_button_rounded_green);
+            getWindow().addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        } else {
+            findViewById(R.id.btn_chat).setBackgroundResource(R.drawable.bg_button_rounded);
+            getWindow().clearFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        }
+
     }
 
     private static boolean isConnected;
@@ -483,7 +494,6 @@ public class ChatActivity extends AppCompatActivity {
                 });
         return builder.create();
     }
-
 
 
     /*--------------------------------------------teste---------------------------------------*/
