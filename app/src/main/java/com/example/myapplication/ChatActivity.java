@@ -4,15 +4,23 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import android.Manifest;
 import android.app.Activity;
 import android.app.Dialog;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.content.DialogInterface;
 import android.graphics.Color;
+import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.media.AudioManager;
+import android.media.MediaPlayer;
+import android.media.MediaRecorder;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.util.Log;
@@ -35,16 +43,23 @@ import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.FirebaseFirestoreException;
 import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.QuerySnapshot;
+import com.google.firebase.storage.FirebaseStorage;
+import com.google.firebase.storage.StorageReference;
+import com.google.firebase.storage.UploadTask;
 import com.squareup.picasso.Picasso;
 import com.xwray.groupie.GroupAdapter;
 import com.xwray.groupie.Item;
+import com.xwray.groupie.OnItemClickListener;
 import com.xwray.groupie.ViewHolder;
 
 import org.apache.commons.text.StringEscapeUtils;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 
 public class ChatActivity extends AppCompatActivity {
 
@@ -64,6 +79,16 @@ public class ChatActivity extends AppCompatActivity {
     String Close = "\\u270A";
     String Open = "\\u270B";
 
+    private MediaPlayer mediaPlayer;
+    boolean mStartRecording = true;
+    private MediaRecorder recorder = null;
+    String baseFileName = null;
+    String fileName = null;
+    // Requesting permission to RECORD_AUDIO
+    private boolean permissionToRecordAccepted = false;
+    private String [] permissions = {Manifest.permission.RECORD_AUDIO};
+    private static final int REQUEST_RECORD_AUDIO_PERMISSION = 200;
+
     ConnectionThread connect;
     //public boolean isConnected = false;
     static Activity activity;
@@ -81,11 +106,30 @@ public class ChatActivity extends AppCompatActivity {
         RecyclerView rv = findViewById(R.id.recycler_chat);
         editChat = findViewById(R.id.edit_chat);
         Button btnChat = findViewById(R.id.btn_chat);
+        final Button btnGravar = findViewById(R.id.btn_Audio);
         isConnected = false;
+
+        baseFileName = getExternalCacheDir().getAbsolutePath();
+        ActivityCompat.requestPermissions(this, permissions, REQUEST_RECORD_AUDIO_PERMISSION);
+        btnGravar.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                onRecord(mStartRecording);
+                if (mStartRecording) {
+                    btnGravar.setText("Grando");
+                } else {
+                    btnGravar.setText("Gravar");
+                }
+                mStartRecording = !mStartRecording;
+            }
+        });
+
         btnChat.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 sendMessage();
+                //sendUrlToMediaPlayer("https://firebasestorage.googleapis.com/v0/b/virtualtouch-3c24c.appspot.com/o/audio%2F5e39b823-bd9d-49e1-af61-e4e3cbcd2ff7?alt=media&token=d9d3bcb9-1fda-40d3-a475-bbb1094c283e");
+                //sendUrlToMediaPlayer(fileName);
             }
         });
 
@@ -101,6 +145,15 @@ public class ChatActivity extends AppCompatActivity {
         adapter = new GroupAdapter();
         rv.setLayoutManager(new LinearLayoutManager(this));
         rv.setAdapter(adapter);
+        adapter.setOnItemClickListener(new OnItemClickListener() {
+            @Override
+            public void onItemClick(@NonNull Item item, @NonNull View view) {
+               // Intent intent = new Intent(ChatActivity.this, ChatActivity.class);
+                MessageItem msg = (ChatActivity.MessageItem) item;
+                if(msg.message.getIsAudio())
+                    sendUrlToMediaPlayer(msg.message.getText());
+            }
+        });
 
         FirebaseFirestore.getInstance().collection("/users")
                 .document(FirebaseAuth.getInstance().getUid())
@@ -115,12 +168,200 @@ public class ChatActivity extends AppCompatActivity {
 
     }
 
+
+    private void onRecord(boolean start) {
+        if (start) {
+            startRecording();
+        } else {
+            stopRecording();
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        switch (requestCode){
+            case REQUEST_RECORD_AUDIO_PERMISSION:
+                permissionToRecordAccepted  = grantResults[0] == PackageManager.PERMISSION_GRANTED;
+                break;
+        }
+        if (!permissionToRecordAccepted ) finish();
+
+    }
+
+    private void startRecording() {
+
+        fileName = baseFileName+"/record.3gp";
+        recorder = new MediaRecorder();
+        recorder.setAudioSource(MediaRecorder.AudioSource.MIC);
+        recorder.setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP);
+        recorder.setOutputFile(fileName);
+        recorder.setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB);
+
+        try {
+            recorder.prepare();
+        } catch (IOException e) {
+            Log.e("Audio", "prepare() failed");
+        }
+
+        recorder.start();
+    }
+
+    private void stopRecording() {
+        recorder.stop();
+        recorder.release();
+        recorder = null;
+        Log.d("Audio", "Gravado!");
+        Uri file = Uri.fromFile(new File(fileName));
+        final StorageReference ref = FirebaseStorage.getInstance().getReference("/audio/" + UUID.randomUUID().toString());
+        ref.putFile(file).addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
+            @Override
+            public void onSuccess(UploadTask.TaskSnapshot taskSnapshot) {
+                ref.getDownloadUrl().addOnSuccessListener(new OnSuccessListener<Uri>() {
+                    @Override
+                    public void onSuccess(Uri uri) {
+
+                        final String MeuId = FirebaseAuth.getInstance().getUid();
+                        final String contatoId = user.getUuid();
+                        long timestamp = System.currentTimeMillis();
+
+                        final Message message = new Message();
+                        message.setFromId(MeuId);
+                        message.setToId(contatoId);
+                        message.setTimestamp(timestamp);
+                        message.setText(uri.toString());
+                        message.setIsAudio(true);
+
+                        if (!message.getText().isEmpty()) {
+                            //Base que garda as minhas msg enviadas
+                            FirebaseFirestore.getInstance().collection("/conversations")
+                                    .document(MeuId)
+                                    .collection(contatoId)
+                                    .add(message)
+                                    .addOnSuccessListener(new OnSuccessListener<DocumentReference>() {
+                                        @Override
+                                        public void onSuccess(DocumentReference documentReference) {
+                                            Log.d("Teste", documentReference.getId());
+
+                                            Contact contact = new Contact();
+                                            contact.setUuid(contatoId);
+                                            contact.setUsername(user.getUsername());
+                                            contact.setPhotoUrl(user.getProfileUrl());
+                                            contact.setTimestamp(message.getTimestamp());
+                                            contact.setLastMessage(message.getText());
+
+                                            FirebaseFirestore.getInstance().collection("/last-messages")
+                                                    .document(MeuId)
+                                                    .collection("contacts")
+                                                    .document(contatoId)
+                                                    .set(contact);
+/*
+                            if (!user.isOnline()) {
+                                Notification notification = new Notification();
+                                /*notification.setFromId(message.getFromId());
+                                notification.setToId(message.getToId());
+                                notification.setTimestamp(message.getTimestamp());
+                                notification.setText(message.getText());
+                                notification.setFromName(me.getUsername());
+
+                                FirebaseFirestore.getInstance().collection("/notifications")
+                                        .document(user.getToken())
+                                        .set(notification);
+                            }
+
+                             */
+                                        }
+
+                                    })
+                                    .addOnFailureListener(new OnFailureListener() {
+                                        @Override
+                                        public void onFailure(@NonNull Exception e) {
+                                            Log.e("Teste", e.getMessage(), e);
+                                        }
+                                    });
+
+                            //Envia para o contato a mensagem
+                            FirebaseFirestore.getInstance().collection("/conversations")
+                                    .document(contatoId)
+                                    .collection(MeuId)
+                                    .add(message)
+                                    .addOnSuccessListener(new OnSuccessListener<DocumentReference>() {
+                                        @Override
+                                        public void onSuccess(DocumentReference documentReference) {
+                                            Log.d("Teste", documentReference.getId());
+
+                                            Contact contact = new Contact();
+                                            contact.setUuid(contatoId);
+                                            contact.setUsername(me.getUsername());
+                                            contact.setPhotoUrl(me.getProfileUrl());
+                                            contact.setTimestamp(message.getTimestamp());
+                                            contact.setLastMessage(message.getText());
+
+                                            FirebaseFirestore.getInstance().collection("/last-messages")
+                                                    .document(contatoId)
+                                                    .collection("contacts")
+                                                    .document(MeuId)
+                                                    .set(contact);
+
+
+                                        }
+                                    })
+                                    .addOnFailureListener(new OnFailureListener() {
+                                        @Override
+                                        public void onFailure(@NonNull Exception e) {
+                                            Log.e("Teste", e.getMessage(), e);
+                                        }
+                                    });
+                        }
+                    }
+                });
+
+
+            }
+        })
+                .addOnFailureListener(new OnFailureListener() {
+                    @Override
+                    public void onFailure(@NonNull Exception e) {
+                        Log.e("Teste", e.getMessage(), e);
+                    }
+                });
+
+    }
+
     @Override
     protected void onDestroy() {
         super.onDestroy();
         if (connect != null)
             connect.cancel();
         Log.d("Error", "Destruido");
+    }
+
+    void sendUrlToMediaPlayer(String url) {
+        try {
+            mediaPlayer = new MediaPlayer();
+            mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
+            // enviar a StreamUrl para o player
+            mediaPlayer.setDataSource(url);
+
+            // esperar que ele fique pronto e após ficar pronto tocar o áudio
+            mediaPlayer.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
+                @Override
+                public void onPrepared(MediaPlayer mp) {
+                    mediaPlayer.start();
+                }
+            });
+            mediaPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
+                @Override
+                public void onCompletion(MediaPlayer mp) {
+                    mediaPlayer.stop();
+                    mediaPlayer.reset();
+                }
+            });
+
+            mediaPlayer.prepareAsync();
+        } catch (IOException err) {
+            Log.e("Audio Error", err.toString());
+        }
     }
 
     private void fetchMessages() {
@@ -343,14 +584,17 @@ public class ChatActivity extends AppCompatActivity {
         public void bind(@NonNull ViewHolder viewHolder, int position) {
             TextView txtMsg = viewHolder.itemView.findViewById(R.id.txt_msg);
             ImageView imgMessage = viewHolder.itemView.findViewById(R.id.img_message_user);
-
-            txtMsg.setText(message.getText());
+            if(message.getIsAudio())
+                txtMsg.setText("Audio");
+            else
+                txtMsg.setText(message.getText());
 
             Picasso.get()
                     .load(message.getFromId().equals(FirebaseAuth.getInstance().getUid())
                             ? me.getProfileUrl()
                             : user.getProfileUrl())
                     .into(imgMessage);
+
         }
 
         @Override
