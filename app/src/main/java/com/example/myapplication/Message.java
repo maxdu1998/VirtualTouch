@@ -1,9 +1,11 @@
 package com.example.myapplication;
 
-public class Message {private String text;
+public class Message {
+    private String text;
     private long timestamp;
     private String fromId;
     private String toId;
+    private boolean isAudio = false;
 
     public String getText() {
         return text;
@@ -35,5 +37,13 @@ public class Message {private String text;
 
     public void setToId(String toId) {
         this.toId = toId;
+    }
+
+    public boolean getIsAudio() {
+        return isAudio;
+    }
+
+    public void setIsAudio(boolean isAudio) {
+        this.isAudio = isAudio;
     }
 }

@@ -4,6 +4,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
+import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.drawable.BitmapDrawable;
@@ -101,6 +102,10 @@ public class RegisterActivity extends AppCompatActivity {
             Toast.makeText(this, "Nome, senha e email devem ser preenchidos", Toast.LENGTH_SHORT).show();
             return;
         }
+        if(mSelectedUri == null || mSelectedUri.equals("")){
+            Toast.makeText(this, "Uma foto deve ser adicionada", Toast.LENGTH_SHORT).show();
+            return;
+        }
 
         FirebaseAuth.getInstance().createUserWithEmailAndPassword(email, senha)
                 .addOnCompleteListener(new OnCompleteListener<AuthResult>() {
@@ -118,6 +123,7 @@ public class RegisterActivity extends AppCompatActivity {
                     @Override
                     public void onFailure(@NonNull Exception e) {
                         Log.i("Teste", e.getMessage());
+                        Toast.makeText( RegisterActivity.this , e.getMessage(), Toast.LENGTH_SHORT).show();
                     }
                 });
     }
@@ -157,6 +163,7 @@ public class RegisterActivity extends AppCompatActivity {
                                             @Override
                                             public void onFailure(@NonNull Exception e) {
                                                 Log.i("Teste", e.getMessage());
+                                                Toast.makeText( RegisterActivity.this , "Error ao criar conta", Toast.LENGTH_SHORT).show();
                                             }
                                         });
                             }
@@ -167,6 +174,7 @@ public class RegisterActivity extends AppCompatActivity {
                     @Override
                     public void onFailure(@NonNull Exception e) {
                         Log.e("Teste", e.getMessage(), e);
+                        Toast.makeText( RegisterActivity.this , "Error ao criar conta", Toast.LENGTH_SHORT).show();
                     }
                 });
 

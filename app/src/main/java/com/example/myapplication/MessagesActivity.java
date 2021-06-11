@@ -22,6 +22,7 @@ import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.EventListener;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.FirebaseFirestoreException;
+import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.QuerySnapshot;
 import com.squareup.picasso.Picasso;
 import com.xwray.groupie.GroupAdapter;
@@ -102,7 +103,7 @@ public class MessagesActivity extends AppCompatActivity {
         String uid = FirebaseAuth.getInstance().getUid();
         if (uid == null) return;
 
-
+/*
         FirebaseFirestore.getInstance().collection("/last-messages")
                 .document(uid)
                 .collection("contacts")
@@ -111,6 +112,26 @@ public class MessagesActivity extends AppCompatActivity {
                     public void onEvent(@Nullable QuerySnapshot queryDocumentSnapshots, @Nullable FirebaseFirestoreException e) {
                         List<DocumentChange> documentChanges = queryDocumentSnapshots.getDocumentChanges();
 
+                        if (documentChanges != null) {
+                            for (DocumentChange doc : documentChanges) {
+                                if (doc.getType() == DocumentChange.Type.ADDED) {
+                                    Contact contact = doc.getDocument().toObject(Contact.class);
+                                    contact.setUuid(doc.getDocument().getId());
+                                    adapter.add(new ContactItem(contact));
+                                }
+                            }
+                        }
+                    }
+                });
+        */
+        FirebaseFirestore.getInstance().collection("/last-messages")
+                .document(uid)
+                .collection("contacts")
+                .orderBy("timestamp", Query.Direction.DESCENDING)
+                .addSnapshotListener(this, new EventListener<QuerySnapshot>() {
+                    @Override
+                    public void onEvent(@Nullable QuerySnapshot value, @Nullable FirebaseFirestoreException error) {
+                        List<DocumentChange> documentChanges = value.getDocumentChanges();
                         if (documentChanges != null) {
                             for (DocumentChange doc : documentChanges) {
                                 if (doc.getType() == DocumentChange.Type.ADDED) {
@@ -170,7 +191,12 @@ public class MessagesActivity extends AppCompatActivity {
             ImageView imgPhoto = viewHolder.itemView.findViewById(R.id.img_message_user);
 
             username.setText(contact.getUsername());
-            message.setText(contact.getLastMessage());
+            if(contact.getIsAudio()){
+                message.setText("");
+                message.setBackground(getDrawable(R.drawable.ic_round_headset_off));
+            }
+            else
+                message.setText(contact.getLastMessage());
             Picasso.get()
                     .load(contact.getPhotoUrl())
                     .into(imgPhoto);
