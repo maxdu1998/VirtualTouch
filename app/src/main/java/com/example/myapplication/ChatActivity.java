@@ -27,6 +27,8 @@ import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.Log;
 import android.view.KeyEvent;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.WindowManager;
@@ -69,7 +71,7 @@ public class ChatActivity extends AppCompatActivity {
 
     private GroupAdapter adapter;
     private static User user;
-    private User me;
+    private static User me;
     // String Rock = "\\uD83D\\uDC4D";
     // String Joinha = "\\uD83E\\uDD18";
 
@@ -96,7 +98,9 @@ public class ChatActivity extends AppCompatActivity {
     private static final int REQUEST_RECORD_AUDIO_PERMISSION = 200;
     private MessageItem lastAudio = null;
 
-    ConnectionThread connect;
+    private static Menu menu;
+
+    static ConnectionThread connect;
     //public boolean isConnected = false;
     static Activity activity;
 
@@ -118,19 +122,6 @@ public class ChatActivity extends AppCompatActivity {
 
         baseFileName = getExternalCacheDir().getAbsolutePath();
         ActivityCompat.requestPermissions(this, permissions, REQUEST_RECORD_AUDIO_PERMISSION);
-       /* btnGravar.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                onRecord(mStartRecording);
-                if (mStartRecording) {
-                    btnGravar.setBackground(getDrawable(R.drawable.ic_twotone_mic_record));
-                } else {
-                    btnGravar.setBackground(getDrawable(R.drawable.ic_twotone_mic));
-                }
-                mStartRecording = !mStartRecording;
-
-            }
-        });*/
 
         btnGravar.setOnTouchListener(new View.OnTouchListener() {
             @Override
@@ -237,6 +228,7 @@ public class ChatActivity extends AppCompatActivity {
             stopRecording();
         }
     }
+
     private void onPlay(boolean start, String url, ImageView img) {
         if (start) {
             startPlaying(url, img);
@@ -482,25 +474,26 @@ public class ChatActivity extends AppCompatActivity {
                                                         || t5.contains(Open)
                                         )) {
                                             if (isConnected && connect.isConnected) {
+                                                Log.d("BT_R", message.getText());
 
                                                 if (t5.contains(Like))
-                                                    connect.write(("0").getBytes());
+                                                    connect.write(("0\n").getBytes());
                                                 if (t5.contains(ToPoint))
-                                                    connect.write(("1").getBytes());
+                                                    connect.write(("1\n").getBytes());
                                                 if (t5.contains(Fuck))
-                                                    connect.write(("2").getBytes());
+                                                    connect.write(("2\n").getBytes());
                                                 if (t5.contains(Rock))
-                                                    connect.write(("3").getBytes());
+                                                    connect.write(("3\n").getBytes());
                                                 if (t5.contains(Ok))
-                                                    connect.write(("4").getBytes());
+                                                    connect.write(("4\n").getBytes());
                                                 if (t5.contains(HangLoose))
-                                                    connect.write(("5").getBytes());
+                                                    connect.write(("5\n").getBytes());
                                                 if (t5.contains(Peace))
-                                                    connect.write(("6").getBytes());
+                                                    connect.write(("6\n").getBytes());
                                                 if (t5.contains(Close))
-                                                    connect.write(("7").getBytes());
+                                                    connect.write(("7\n").getBytes());
                                                 if (t5.contains(Open))
-                                                    connect.write(("8").getBytes());
+                                                    connect.write(("8\n").getBytes());
 
                                                 /*
                                                 t5 = t5.replaceAll(Like     , "0:");
@@ -532,7 +525,7 @@ public class ChatActivity extends AppCompatActivity {
                             }
                         }
                     });
-
+/*
             FirebaseFirestore.getInstance().collection("/handComand")
                     .document(MeuId)
                     .collection(contatoId)
@@ -557,7 +550,43 @@ public class ChatActivity extends AppCompatActivity {
                             }
                         }
                     });
+            */
 
+        }
+    }
+
+    private static void fetchMessagesBluetooth(){
+        if (me != null) {
+            final String MeuId = me.getUuid();
+            final String contatoId = user.getUuid();
+            final boolean delete = true;
+            FirebaseFirestore.getInstance().collection("/handComand")
+                    .document(MeuId)
+                    .collection(contatoId)
+                    .orderBy("timestamp", Query.Direction.ASCENDING)
+                    .addSnapshotListener(activity, new EventListener<QuerySnapshot>() {
+                        @Override
+                        public void onEvent(@Nullable QuerySnapshot queryDocumentSnapshots, @Nullable FirebaseFirestoreException e) {
+                            List<DocumentChange> documentChanges = queryDocumentSnapshots.getDocumentChanges();
+
+                            if (documentChanges != null) {
+                                for (DocumentChange doc : documentChanges) {
+                                    if (doc.getType() == DocumentChange.Type.ADDED) {
+                                        Message message = doc.getDocument().toObject(Message.class);
+                                        Log.d("BT_R", message.getText());
+                                        connect.write((message.getText()+'\n').getBytes());
+                                        //connect.write(("Teste").getBytes());
+                                        if(delete)
+                                        FirebaseFirestore.getInstance().collection("/handComand")
+                                                .document(MeuId)
+                                                .collection(contatoId)
+                                                .document(doc.getDocument().getId())
+                                                .delete();
+                                    }
+                                }
+                            }
+                        }
+                    });
         }
     }
 
@@ -577,7 +606,7 @@ public class ChatActivity extends AppCompatActivity {
         message.setText(text);
 
         if (!message.getText().isEmpty()) {
-            //Base que garda as minhas msg enviadas
+            //Base que guarda as minhas msg enviadas
             FirebaseFirestore.getInstance().collection("/conversations")
                     .document(MeuId)
                     .collection(contatoId)
@@ -753,38 +782,51 @@ public class ChatActivity extends AppCompatActivity {
         }
     }
 
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.menu_chat, menu);
+        this.menu = menu;
+        return true;
+    }
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            case R.id.btn_bletooth:
+                if(!isConnected){
+                    fetchBluetooth();
+                }
+                else{
+                    if (connect != null)
+                        connect.cancel();
+                    menu.getItem(0).setTitle(R.string.bluetoothOFF);
+                }
+
+                break;
+        }
+        return super.onOptionsItemSelected(item);
+    }
 
     private void connectBT(String mac) {
 
 
         BluetoothAdapter btAdapter = BluetoothAdapter.getDefaultAdapter();
         if (btAdapter == null) {
-            //statusMessage.setText("Que pena! Hardware Bluetooth não está funcionando :(");
-        } else {
-            //statusMessage.setText("Ótimo! Hardware Bluetooth está funcionando :)");
+            return;
         }
 
-        /* A chamada do seguinte método liga o Bluetooth no dispositivo Android
-            sem pedido de autorização do usuário. É altamente não recomendado no
-            Android Developers, mas, para simplificar este app, que é um demo,
-            faremos isso. Na prática, em um app que vai ser usado por outras
-            pessoas, não faça isso.
-         */
         btAdapter.enable();
 
-        //connect = new ConnectionThread("98:D3:31:F5:2A:C9");
         connect = new ConnectionThread(mac);
         connect.start();
 
-        /* Um descanso rápido, para evitar bugs esquisitos.
-         */
         try {
             Thread.sleep(1000);
         } catch (Exception E) {
             E.printStackTrace();
         }
         isConnected = connect.isConnected;
+
         //Muda Cor ao Conectar BT
+        /*
         if (isConnected = true) {
             findViewById(R.id.btn_chat).setBackgroundResource(R.drawable.bg_button_rounded_green);
             getWindow().addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
@@ -792,6 +834,7 @@ public class ChatActivity extends AppCompatActivity {
             findViewById(R.id.btn_chat).setBackgroundResource(R.drawable.bg_button_rounded);
             getWindow().clearFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         }
+         */
 
     }
 
@@ -846,16 +889,22 @@ public class ChatActivity extends AppCompatActivity {
             String dataString = new String(data);
 
             if (dataString.equals("---N")) {
+
+                menu.getItem(0).setTitle(R.string.bluetoothOFF);
+                if(isConnected)
+                    Toast.makeText(activity, "Disconnected", Toast.LENGTH_LONG).show();
+                else
+                    Toast.makeText(activity, "Connection ERROR", Toast.LENGTH_LONG).show();
                 isConnected = false;
-                Toast.makeText(activity, "Connection ERROR", Toast.LENGTH_LONG).show();
             }
             //statusMessage.setText("Ocorreu um erro durante a conexão D:");
 
 
             else if (dataString.equals("---S")) {
                 isConnected = true;
+                menu.getItem(0).setTitle(R.string.bluetoothON);
                 Toast.makeText(activity, "Connection SUCCESS", Toast.LENGTH_LONG).show();
-                Log.d("Btt", "Conectado :D");
+                fetchMessagesBluetooth();
             } else {
                 sendMessageBT(dataString);
             }
